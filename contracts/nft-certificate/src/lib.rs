@@ -73,6 +73,10 @@ const MAX_BATCH_MINT_SIZE: u32 = 50;
 /// Minted automatically on sponsorship confirmation; carries species,
 /// GPS coordinates and planting date so it is viewable in Stellar wallets.
 const SPONSOR_NFT_NAME_PREFIX: &str = "Tree Ownership";
+
+/// Maximum length accepted for sponsor NFT metadata string fields
+/// (species, GPS coordinates, planting date).
+const SPONSOR_NFT_MAX_FIELD_LEN: u32 = 256;
 /// Renew dynamic metadata at least every day and retain it for another 30 days.
 const GROWTH_TTL_THRESHOLD: u32 = 17_280;
 const GROWTH_TTL_EXTEND_TO: u32 = 518_400;
@@ -328,6 +332,11 @@ impl NftCertificate {
 
         env.events()
             .publish((symbol_short!("issRm"), issuer), env.ledger().timestamp());
+    }
+
+    /// Returns the sponsor NFT metadata field length limit.
+    pub fn sponsor_nft_max_field_len(_env: Env) -> u32 {
+        SPONSOR_NFT_MAX_FIELD_LEN
     }
 
     /// Returns all current issuer records.

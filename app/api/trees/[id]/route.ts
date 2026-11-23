@@ -6,7 +6,7 @@
  * shared with GET /api/trees.
  *
  * Responses:
- *   200  { tree: Tree, cachedAt: string }
+ *   200  { tree: Tree, nft: NftCertificate | null, cachedAt: string }
  *   400  { error: "id is required" }
  *   404  { error: "tree not found" }
  *   500  { error: string }
@@ -37,8 +37,9 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: 'tree not found' }, { status: 404 });
     }
 
-    // Expose on-chain ownership NFT metadata (species, GPS, planting date)
-    // for sponsored trees so sponsors can verify ownership in their wallet.
+    // Ownership NFT (SEP-0039 metadata) for sponsored trees. The NFT is minted
+    // on sponsorship confirmation; this exposes its metadata (species, GPS,
+    // planting date) so sponsors can verify ownership in their Stellar wallet.
     const nft = tree.sponsored
       ? {
           standard: 'SEP-0039' as const,

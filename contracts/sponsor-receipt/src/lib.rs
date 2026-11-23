@@ -100,6 +100,12 @@ impl OptAddress {
 pub struct SponsorReceipt {
     /// Globally unique incrementing receipt id.
     pub receipt_id: u64,
+    /// GPS latitude scaled ×1_000_000 (e.g. 6.5244 → 6_524_400).
+    pub gps_lat_scaled: i64,
+    /// GPS longitude scaled ×1_000_000 (e.g. 3.3792 → 3_379_200).
+    pub gps_lon_scaled: i64,
+    /// Planting date as a ledger-style unix timestamp.
+    pub planted_at: u64,
     /// Sponsor wallet the receipt is bound to (immutable).
     pub sponsor: Address,
     /// Linked tree_id in the tree-escrow / tree-registry namespace.
@@ -181,6 +187,9 @@ impl SponsorReceiptContract {
         tree_id: u64,
         species: Symbol,
         region: String,
+        gps_lat_scaled: i64,
+        gps_lon_scaled: i64,
+        planted_at: u64,
         co2_estimate_scaled: i128,
         planter: OptAddress,
     ) -> u64 {
@@ -214,6 +223,9 @@ impl SponsorReceiptContract {
 
         let receipt = SponsorReceipt {
             receipt_id,
+            gps_lat_scaled,
+            gps_lon_scaled,
+            planted_at,
             sponsor: sponsor.clone(),
             tree_id,
             species,
@@ -331,6 +343,17 @@ impl SponsorReceiptContract {
 
         let old_key = DataKey::SponsorTree(from.clone(), receipt.tree_id);
         let new_key = DataKey::SponsorTree(to.clone(), receipt.tree_id);
+        if env.storage().persistent().has(&new_key) {
+            panic_with_error!(&env, Error::AlreadyMintedReceipt);
+        }
+        env.storage().persistent().remove(&old_key);
+        env.storage().persistent().set(&new_key, &receipt_id);
+        receipt.sponsor = to.clone();
+        env.storage()
+            .persistent()
+            .set(&DataKey::Receipt(receipt_id), &receipt);
+        env.events()
+            .publish((symbol_short!("RecvXfer"), from), (to, receipt_id));, receipt.tree_id);
 
         env.storage().persistent().remove(&old_key);
         env.storage().persistent().set(&new_key, &receipt_id);
